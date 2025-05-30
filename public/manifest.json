@@ -8,7 +8,9 @@
     "declarativeNetRequest",
     "scripting",
     "tabs",
-    "actibeTab"
+    "activeTab",
+    "storage",
+    "webNavigation"
   ],
   "host_permissions": [
     "<all_urls>"

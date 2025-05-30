@@ -6,8 +6,8 @@
   "scripts": {
     "dev:popup": "vite build --watch --config vite.popup.config.ts",
     "dev:background": "vite build --watch --config vite.background.config.ts",
-    "dev:content": "vite build --watch --config vite.content.config.ts",
     "dev": "npm-run-all --parallel dev:*",
+    "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview"
   },
