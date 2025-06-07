@@ -5,81 +5,91 @@ interface RequestEntry {
   timeStamp: string;
 }
 
-const requests = new Map<number, RequestEntry[]>();
+const MAX_REQUESTS_PER_TAB = 100;
+const requestsMap = new Map<number, RequestEntry[]>();
 
+// Добавление нового запроса в лог вкладки
+function logRequest(tabId: number, entry: RequestEntry) {
+  const tabRequests = requestsMap.get(tabId) || [];
+  tabRequests.push(entry);
+
+  if (tabRequests.length > MAX_REQUESTS_PER_TAB) {
+    tabRequests.shift(); // удаляем самый старый
+  }
+
+  requestsMap.set(tabId, tabRequests);
+}
+
+// Обработчик завершённых запросов
 chrome.webRequest.onCompleted.addListener(
   (details) => {
-    // Проверка tabId
-    if (details.tabId !== undefined && details.tabId >= 0) {
-      const entry: RequestEntry = {
-        url: details.url,
-        method: details.method,
-        statusCode: details.statusCode ?? 0,
-        timeStamp: new Date(details.timeStamp).toLocaleTimeString(),
-      };
+    if (details.tabId === undefined || details.tabId < 0) return;
 
-      if (!requests.has(details.tabId)) {
-        requests.set(details.tabId, []);
-      }
+    const entry: RequestEntry = {
+      url: details.url,
+      method: details.method,
+      statusCode: details.statusCode ?? 0,
+      timeStamp: new Date(details.timeStamp).toLocaleTimeString(),
+    };
 
-      requests.get(details.tabId)!.push(entry);
-
-      // Ограничение количества логов
-      if (requests.get(details.tabId)!.length > 100) {
-        requests.get(details.tabId)!.shift();
-      }
-    }
+    logRequest(details.tabId, entry);
   },
   { urls: ['<all_urls>'] }
 );
 
-// Очистка при закрытии вкладки
+// Очистка логов при закрытии вкладки
 chrome.tabs.onRemoved.addListener((tabId) => {
-  requests.delete(tabId);
+  requestsMap.delete(tabId);
 });
 
+// Очистка логов при переходе на новый URL
 chrome.webNavigation.onBeforeNavigate.addListener((details) => {
   if (details.tabId >= 0) {
-    requests.set(details.tabId, []); // сбрасываем запросы для вкладки
-    console.log(`🧹 Очищен лог для вкладки ${details.tabId}`);
+    requestsMap.set(details.tabId, []);
   }
 });
 
+// Обработчик входящих сообщений от popup и других компонентов
 chrome.runtime.onMessage.addListener(
-  (
-    message: { type: string },
-    sender: chrome.runtime.MessageSender,
-    sendResponse: (response?: unknown) => void
-  ): boolean | void => {
-    if (message.type === 'from-popup') {
-      console.log('Background: получил сообщение от popup:', message.type);
-      return true;
-    } else if (message.type === 'INJECT_CONTENT') {
-      console.log('🔵 background: пришёл запрос на инжект');
+  (message: { type: string }, _sender, sendResponse): boolean => {
+    switch (message.type) {
+      case 'from-popup':
+        console.log('📨 Получено сообщение от popup:1', message.type);
+        return true;
 
-      chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-        const tab = tabs[0];
-        if (tab?.id) {
-          chrome.scripting.executeScript({
-            target: { tabId: tab.id },
-            files: ['content/content.js'],
-          });
-        }
-      });
-      return true;
-    } else if (message.type === 'GET_LOGS') {
-      chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-        const tabId = tabs[0]?.id;
-        console.log(tabId);
-        console.log(requests);
+      case 'INJECT_CONTENT':
+        console.log('🔵 Запрос на инжект content script1');
+        injectContentScript();
+        return true;
 
-        if (typeof tabId === 'number' && tabId >= 0) {
-          sendResponse(requests.get(tabId) || []);
-        } else {
-          sendResponse([]);
-        }
-      });
-      return true; // 🔥 ОБЯЗАТЕЛЬНО!
+      case 'GET_LOGS':
+        fetchActiveTabLogs(sendResponse);
+        return true;
+
+      default:
+        return false;
     }
   }
 );
+
+// Внедрение content script в активную вкладку
+function injectContentScript() {
+  chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+    const tabId = tabs[0]?.id;
+    if (tabId !== undefined) {
+      chrome.scripting.executeScript({
+        target: { tabId },
+        files: ['content/content.js'],
+      });
+    }
+  });
+}
+
+// Отправка логов popup-у
+function fetchActiveTabLogs(sendResponse: (response: RequestEntry[]) => void) {
+  chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+    const tabId = tabs[0]?.id ?? -1;
+    const logs = requestsMap.get(tabId) || [];
+    sendResponse(logs);
+  });
+}
