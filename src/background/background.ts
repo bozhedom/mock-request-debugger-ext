@@ -3,6 +3,12 @@ interface RequestEntry {
   method: string;
   statusCode: number;
   timeStamp: string;
+  statusLine?: string;
+  type?: string;
+  fromCache?: boolean;
+  initiator?: string;
+  ip?: string;
+  tabId?: number;
 }
 
 const MAX_REQUESTS_PER_TAB = 100;
@@ -30,6 +36,12 @@ chrome.webRequest.onCompleted.addListener(
       method: details.method,
       statusCode: details.statusCode ?? 0,
       timeStamp: new Date(details.timeStamp).toLocaleTimeString(),
+      statusLine: details.statusLine ?? '',
+      type: details.type ?? '',
+      fromCache: details.fromCache ?? false,
+      initiator: details.initiator ?? '',
+      ip: details.ip ?? '',
+      tabId: details.tabId ?? -1,
     };
 
     logRequest(details.tabId, entry);
