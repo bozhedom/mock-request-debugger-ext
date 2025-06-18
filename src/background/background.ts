@@ -1,3 +1,4 @@
+import { getAllMocks } from '../popup/indexDB';
 interface RequestEntry {
   url: string;
   method: string;
@@ -13,6 +14,61 @@ interface RequestEntry {
 
 const MAX_REQUESTS_PER_TAB = 100;
 const requestsMap = new Map<number, RequestEntry[]>();
+
+function createRule(
+  id: number,
+  url: string,
+  response: object
+): chrome.declarativeNetRequest.Rule {
+  return {
+    id,
+    priority: 1,
+    action: {
+      type: 'redirect' as chrome.declarativeNetRequest.RuleActionType,
+      redirect: {
+        url: `data:application/json,${encodeURIComponent(
+          JSON.stringify(response)
+        )}`,
+      },
+    },
+    condition: {
+      urlFilter: url,
+    },
+  };
+}
+
+async function updateRulesFromMocks() {
+  console.log('хуй');
+
+  const mocks = await getAllMocks();
+  console.log('хуй', mocks);
+
+  const newRules = mocks.map(
+    (mock: { url: string; response: object }, i: number) =>
+      createRule(i + 1, mock.url, mock.response)
+  );
+
+  const existingRules = await chrome.declarativeNetRequest.getDynamicRules();
+
+  console.log('[Финальные правила]:', newRules);
+
+  await chrome.declarativeNetRequest.updateDynamicRules({
+    removeRuleIds: existingRules.map((r) => r.id),
+    addRules: newRules,
+  });
+}
+
+chrome.runtime.onInstalled.addListener(() => {
+  console.log('хуй');
+
+  updateRulesFromMocks();
+});
+
+chrome.runtime.onStartup.addListener(() => {
+  console.log('хуй');
+
+  updateRulesFromMocks();
+});
 
 // Добавление нового запроса в лог вкладки
 function logRequest(tabId: number, entry: RequestEntry) {
@@ -63,10 +119,10 @@ chrome.webNavigation.onBeforeNavigate.addListener((details) => {
 
 // Обработчик входящих сообщений от popup и других компонентов
 chrome.runtime.onMessage.addListener(
-  (message: { type: string }, _sender, sendResponse): boolean => {
-    switch (message.type) {
+  (request, _sender, sendResponse): boolean => {
+    switch (request.type) {
       case 'from-popup':
-        console.log('📨 Получено сообщение от popup:1', message.type);
+        console.log('📨 Получено сообщение от popup:1', request.type);
         return true;
 
       case 'INJECT_CONTENT':
@@ -76,6 +132,10 @@ chrome.runtime.onMessage.addListener(
 
       case 'GET_LOGS':
         fetchActiveTabLogs(sendResponse);
+        return true;
+
+      case 'update-mocks':
+        updateRulesFromMocks().then(() => sendResponse('ok'));
         return true;
 
       default:

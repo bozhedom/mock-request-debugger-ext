@@ -22,3 +22,9 @@ export interface FiltersState {
   statusGroup: string;
   fromCache: string;
 }
+
+export interface Mock {
+  url: string;
+  response: object;
+  enabled: boolean; // новый флаг
+}
