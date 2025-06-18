@@ -55,7 +55,7 @@ export default function App() {
   const handleDelete = async (url: string) => {
     await deleteMock(url);
     await loadMocks();
-    chrome.runtime.sendMessage('update-mocks');
+    await chrome.runtime.sendMessage({ type: 'update-mocks' });
   };
 
   // const handleToggle = async (url: string, enabled: boolean) => {
@@ -73,9 +73,9 @@ export default function App() {
     if (!newResponse) return;
     try {
       const parsed = JSON.parse(newResponse);
-      updateMock(mock.url, { response: parsed }).then(() => {
+      updateMock(mock.url, { response: parsed }).then(async () => {
         loadMocks();
-        chrome.runtime.sendMessage('update-mocks');
+        await chrome.runtime.sendMessage({ type: 'update-mocks' });
       });
     } catch (e) {
       alert('Некорректный JSON' + e);

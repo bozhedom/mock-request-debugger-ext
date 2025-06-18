@@ -15,7 +15,7 @@ const Form = ({ onSubmit, loadMocks }: FormProps) => {
     try {
       const parsed = JSON.parse(json);
       onSubmit(url, parsed);
-      await chrome.runtime.sendMessage('update-mocks');
+      await chrome.runtime.sendMessage({ type: 'update-mocks' });
       setUrl('');
       setJson('{}');
       // setEnabled(false);

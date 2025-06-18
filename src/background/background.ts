@@ -38,7 +38,6 @@ function createRule(
 }
 
 async function updateRulesFromMocks() {
-
   const mocks = await getAllMocks();
 
   const newRules = mocks.map(
@@ -48,21 +47,25 @@ async function updateRulesFromMocks() {
 
   const existingRules = await chrome.declarativeNetRequest.getDynamicRules();
 
-  console.log('[Финальные правила]:', newRules);
-
   await chrome.declarativeNetRequest.updateDynamicRules({
     removeRuleIds: existingRules.map((r) => r.id),
     addRules: newRules,
   });
 }
 
-chrome.runtime.onInstalled.addListener(() => {
+function reloadActiveTab() {
+  chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+    if (tabs[0]?.id !== undefined) {
+      chrome.tabs.reload(tabs[0].id);
+    }
+  });
+}
 
+chrome.runtime.onInstalled.addListener(() => {
   updateRulesFromMocks();
 });
 
 chrome.runtime.onStartup.addListener(() => {
-
   updateRulesFromMocks();
 });
 
@@ -72,7 +75,7 @@ function logRequest(tabId: number, entry: RequestEntry) {
   tabRequests.push(entry);
 
   if (tabRequests.length > MAX_REQUESTS_PER_TAB) {
-    tabRequests.shift(); // удаляем самый старый
+    tabRequests.shift();
   }
 
   requestsMap.set(tabId, tabRequests);
@@ -132,6 +135,7 @@ chrome.runtime.onMessage.addListener(
 
       case 'update-mocks':
         updateRulesFromMocks().then(() => sendResponse('ok'));
+        reloadActiveTab();
         return true;
 
       default:
