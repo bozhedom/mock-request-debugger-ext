@@ -38,10 +38,8 @@ function createRule(
 }
 
 async function updateRulesFromMocks() {
-  console.log('хуй');
 
   const mocks = await getAllMocks();
-  console.log('хуй', mocks);
 
   const newRules = mocks.map(
     (mock: { url: string; response: object }, i: number) =>
@@ -59,13 +57,11 @@ async function updateRulesFromMocks() {
 }
 
 chrome.runtime.onInstalled.addListener(() => {
-  console.log('хуй');
 
   updateRulesFromMocks();
 });
 
 chrome.runtime.onStartup.addListener(() => {
-  console.log('хуй');
 
   updateRulesFromMocks();
 });
