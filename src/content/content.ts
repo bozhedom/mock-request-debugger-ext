@@ -1,13 +1,32 @@
-console.log('Контентный скрипт запущен');
+// content-script.ts
+console.log('[MOCK EXTENSION] Content script is active');
 
-const banner = document.createElement('div');
-banner.textContent = 'Вставлено расширением!';
-banner.style.position = 'fixed';
-banner.style.bottom = '0';
-banner.style.left = '0';
-banner.style.right = '0';
-banner.style.background = 'red';
-banner.style.color = 'white';
-banner.style.textAlign = 'center';
-banner.style.padding = '10px';
-document.body.appendChild(banner);
+// function overrideUserCard(
+//   _userId: number,
+//   newData: Partial<{ name: string; email: string }>
+// ) {
+//   const interval = setInterval(() => {
+//     const cards = document.querySelectorAll('.card');
+
+//     cards.forEach((card) => {
+//       const nameEl = card.querySelector('h2');
+//       const emailEl = Array.from(card.querySelectorAll('p')).find((el) =>
+//         el.textContent?.includes('@')
+//       );
+
+//       if (nameEl?.textContent?.includes('Clementine Bauch')) {
+//         // имя этого пользователя с id = 3
+//         if (newData.name) nameEl.textContent = newData.name;
+//         if (newData.email && emailEl)
+//           emailEl.textContent = `📧 ${newData.email}`;
+//         clearInterval(interval);
+//       }
+//     });
+//   }, 0);
+// }
+
+// // Вызов с замоканными данными
+// overrideUserCard(3, {
+//   name: '🔮 Замоканный Юзер',
+//   email: 'fake@email.com',
+// });
