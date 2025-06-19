@@ -1,24 +1,24 @@
 import { useState } from 'react';
 
 interface FormProps {
-  onSubmit: (url: string, json: string) => void;
+  onSubmit: (url: string, json: string, enabled: boolean) => void;
   loadMocks: () => Promise<void>;
 }
 
 const Form = ({ onSubmit, loadMocks }: FormProps) => {
   const [url, setUrl] = useState('');
   const [json, setJson] = useState('{}');
-  // const [enabled, setEnabled] = useState(false);
+  const [enabled, setEnabled] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
       const parsed = JSON.parse(json);
-      onSubmit(url, parsed);
+      onSubmit(url, parsed, enabled);
       await chrome.runtime.sendMessage({ type: 'update-mocks' });
       setUrl('');
       setJson('{}');
-      // setEnabled(false);
+      setEnabled(true);
       await loadMocks();
       alert('Мок сохранён!');
     } catch (e) {

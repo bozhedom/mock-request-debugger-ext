@@ -14,18 +14,23 @@ export async function getDB() {
   });
 }
 
-export async function saveMock(url: string, response: string) {
+export async function saveMock(url: string, response: string, enabled: boolean) {
   const db = await getDB();
-  await db.put(STORE_NAME, { url, response });
+  await db.put(STORE_NAME, {
+    url,
+    response,
+    enabled,
+  });
 }
 
 export async function getMock(url: string): Promise<object | null> {
   const db = await getDB();
-  return (await db.get(STORE_NAME, url))?.response || null;
+  const entry = await db.get(STORE_NAME, url);
+  return entry ? { response: entry.response, enabled: entry.enabled } : null;
 }
 
 export async function getAllMocks(): Promise<
-  { url: string; response: object }[]
+  { url: string; response: object; enabled: boolean }[]
 > {
   const db = await getDB();
   return await db.getAll(STORE_NAME);
@@ -40,7 +45,7 @@ export async function deleteMock(url: string) {
 
 export async function updateMock(
   url: string,
-  update: Partial<{ response: object }>
+  update: Partial<{ response: object; enabled: boolean }>
 ) {
   const db = await getDB();
   const tx = db.transaction('mocks', 'readwrite');

@@ -40,7 +40,9 @@ function createRule(
 async function updateRulesFromMocks() {
   const mocks = await getAllMocks();
 
-  const newRules = mocks.map(
+  const enabledMocks = mocks.filter((mock) => mock.enabled);
+
+  const newRules = enabledMocks.map(
     (mock: { url: string; response: object }, i: number) =>
       createRule(i + 1, mock.url, mock.response)
   );
