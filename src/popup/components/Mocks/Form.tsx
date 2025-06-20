@@ -18,7 +18,7 @@ const Form = ({ onSubmit, loadMocks }: FormProps) => {
       await chrome.runtime.sendMessage({ type: 'update-mocks' });
       setUrl('');
       setJson('{}');
-      setEnabled(true);
+      setEnabled(enabled);
       await loadMocks();
       alert('Мок сохранён!');
     } catch (e) {
@@ -27,25 +27,116 @@ const Form = ({ onSubmit, loadMocks }: FormProps) => {
   };
 
   return (
-    <form onSubmit={handleSubmit}>
-      <div style={{ marginBottom: 8 }}>
-        <label style={{ display: 'block' }}>URL:</label>
+    <form onSubmit={handleSubmit} className="mock-form">
+      <div className="form-group">
+        <label>URL запроса</label>
         <input
           type="text"
           value={url}
           onChange={(e) => setUrl(e.target.value)}
-          style={{ width: '100%' }}
+          required
         />
       </div>
-      <div style={{ marginBottom: 8 }}>
-        <label style={{ display: 'block' }}>Ответ:</label>
+      <div className="form-group">
+        <label>Ответ (JSON)</label>
         <textarea
           value={json}
           onChange={(e) => setJson(e.target.value)}
-          style={{ width: '100%', minHeight: 150 }}
+          rows={10}
+          required
+          style={{ marginBottom: 10 }}
         />
+        <div style={{ marginBottom: 12 }}>
+          <label
+            htmlFor="json-upload"
+            style={{
+              display: 'inline-block',
+              padding: '6px 16px',
+              backgroundColor: '#2196f3',
+              color: '#fff',
+              borderRadius: 4,
+              cursor: 'pointer',
+              fontSize: 13,
+            }}
+          >
+            📂 Импортировать JSON
+          </label>
+          <input
+            id="json-upload"
+            type="file"
+            accept=".json,application/json"
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (!file) return;
+
+              const reader = new FileReader();
+              reader.onload = (event) => {
+                try {
+                  const text = event.target?.result as string;
+                  const parsed = JSON.parse(text);
+                  setJson(JSON.stringify(parsed, null, 2));
+                } catch (error) {
+                  alert('Ошибка при чтении JSON: ' + error);
+                }
+              };
+              reader.readAsText(file);
+            }}
+            style={{ display: 'none' }}
+          />
+        </div>
       </div>
-      <button type="submit">Сохранить Mock</button>
+      <div className="form-group checkbox">
+        <label>
+          <input
+            type="checkbox"
+            checked={enabled}
+            onChange={() => setEnabled(!enabled)}
+          />
+          Включено
+        </label>
+      </div>
+      <button type="submit" className="save-button">
+        💾 Сохранить мок
+      </button>
+      <style>{`
+        .mock-form {
+          background: #f9f9f9;
+          padding: 16px;
+          border-radius: 8px;
+          border: 1px solid #ddd;
+        }
+        .form-group {
+          margin-bottom: 12px;
+        }
+        label {
+          font-weight: 500;
+          margin-bottom: 4px;
+          display: block;
+        }
+        input[type='text'],
+        textarea {
+          width: 95%;
+          padding: 8px;
+          border-radius: 6px;
+          border: 1px solid #ccc;
+          font-family: monospace;
+        }
+        .checkbox {
+          display: flex;
+          align-items: center;
+        }
+        .save-button {
+          padding: 8px 16px;
+          background-color: #4caf50;
+          border: none;
+          color: white;
+          border-radius: 6px;
+          cursor: pointer;
+        }
+        .save-button:hover {
+          background-color: #43a047;
+        }
+      `}</style>
     </form>
   );
 };

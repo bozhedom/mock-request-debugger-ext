@@ -14,7 +14,11 @@ export async function getDB() {
   });
 }
 
-export async function saveMock(url: string, response: string, enabled: boolean) {
+export async function saveMock(
+  url: string,
+  response: string,
+  enabled: boolean
+) {
   const db = await getDB();
   await db.put(STORE_NAME, {
     url,
@@ -44,17 +48,35 @@ export async function deleteMock(url: string) {
 }
 
 export async function updateMock(
-  url: string,
-  update: Partial<{ response: object; enabled: boolean }>
+  oldUrl: string,
+  update: Partial<{ url: string; response: object; enabled: boolean }>
 ) {
   const db = await getDB();
   const tx = db.transaction('mocks', 'readwrite');
   const store = tx.objectStore('mocks');
-  const mock = await store.get(url);
-  if (mock) {
-    const updated = { ...mock, ...update };
-    await store.put(updated);
+
+  // const mock = await store.get(url);
+  // if (mock) {
+  //   const updated = { ...mock, ...update };
+  //   await store.put(updated);
+  // }
+  // await tx.done;
+  const existing = await store.get(oldUrl);
+
+  const newUrl = update.url ?? oldUrl;
+
+  if (newUrl !== oldUrl) {
+    // удаляем старую запись
+    await store.delete(oldUrl);
   }
+
+  const updated = {
+    ...existing,
+    ...update,
+    url: newUrl,
+  };
+
+  await store.put(updated);
   await tx.done;
 }
 
